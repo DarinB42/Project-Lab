@@ -1,0 +1,2 @@
+# Investigation Log Generator This tool creates standardized investigation logs for paranormal investigations.
+# Goal Collect structured data, output clean, consistent reports, feed future database system.
