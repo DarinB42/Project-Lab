@@ -7,22 +7,52 @@ def ask_question(prompt):
     return input(prompt + " ")
 
 
+def choose_option(prompt, options):
+    print(f"\n{prompt}")
+    for i, option in enumerate(options, 1):
+        print(f"{i}. {option}")
+
+    choice = int(input("Select option number: "))
+    return options[choice - 1]
+
+
 def main():
     print("Investigation Log Generator")
     print("---------------------------")
 
     generated_on = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    case_number = ask_question("Case number:")
+    location = ask_question("Location:")
+    investigation_date = ask_question("Investigation date:")
+    investigators = ask_question("Investigators:")
+
+    weather = choose_option(
+        "Weather conditions:",
+        ["Clear", "Cloudy", "Rain", "Storm", "Fog", "Other"]
+    )
+
+    evidence_type = choose_option(
+        "Type of activity observed:",
+        ["Visual", "Audio", "Physical", "Environmental", "None", "Other"]
+    )
+
+    reported_activity = ask_question("Reported activity:")
+    equipment_used = ask_question("Equipment used:")
+    observations = ask_question("Observations:")
+    initial_conclusion = ask_question("Initial conclusion:")
+
     investigation = {
-        "case_number": ask_question("Case number:"),
-        "location": ask_question("Location:"),
-        "investigation_date": ask_question("Investigation date:"),
-        "investigators": ask_question("Investigators:"),
-        "weather": ask_question("Weather/conditions:"),
-        "reported_activity": ask_question("Reported activity:"),
-        "equipment_used": ask_question("Equipment used:"),
-        "observations": ask_question("Observations:"),
-        "initial_conclusion": ask_question("Initial conclusion:"),
+        "case_number": case_number,
+        "location": location,
+        "investigation_date": investigation_date,
+        "investigators": investigators,
+        "weather": weather,
+        "evidence_type": evidence_type,
+        "reported_activity": reported_activity,
+        "equipment_used": equipment_used,
+        "observations": observations,
+        "initial_conclusion": initial_conclusion,
         "generated_on": generated_on,
     }
 
@@ -37,6 +67,9 @@ Investigators: {investigation["investigators"]}
 
 ## Conditions
 Weather/Conditions: {investigation["weather"]}
+
+## Evidence Type
+{investigation["evidence_type"]}
 
 ## Reported Activity
 {investigation["reported_activity"]}
