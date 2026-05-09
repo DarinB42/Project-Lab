@@ -27,13 +27,29 @@ def choose_option(prompt, options):
 
         print(f"Please enter a number between 1 and {len(options)}.")
 
+def generate_case_id(data_folder):
+    today = datetime.now().strftime("%Y-%m-%d")
+    existing_files = list(data_folder.glob(f"{today}-*_data.json"))
+
+    next_number = len(existing_files) + 1
+
+    return f"{today}-{next_number:03d}"
+
 def main():
     print("Investigation Log Generator")
     print("---------------------------")
 
     generated_on = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    case_number = ask_question("Case number:")
+    logs_folder = Path("logs")
+    data_folder = Path("data")
+
+    logs_folder.mkdir(exist_ok=True)
+    data_folder.mkdir(exist_ok=True)
+
+    case_number = generate_case_id(data_folder)
+    print(f"Generated Case ID: {case_number}")
+
     location = ask_question("Location:")
     investigation_date = ask_question("Investigation date:")
     investigators = ask_question("Investigators:")
@@ -97,11 +113,6 @@ Weather/Conditions: {investigation["weather"]}
 Generated On: {investigation["generated_on"]}
 """
 
-    logs_folder = Path("logs")
-    data_folder = Path("data")
-
-    logs_folder.mkdir(exist_ok=True)
-    data_folder.mkdir(exist_ok=True)
 
     safe_case_number = investigation["case_number"].replace(" ", "_")
 
