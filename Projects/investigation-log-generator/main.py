@@ -91,7 +91,83 @@ def save_to_database(investigation, database_folder):
     connection.commit()
     connection.close()
 
-def main():
+def fetch_all_investigations(database_folder):
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number, location, investigation_date, weather, evidence_type
+        FROM investigations
+        ORDER BY generated_on DESC
+    """)
+
+    results = cursor.fetchall()
+    connection.close()
+
+    return results
+
+def display_investigations(investigations):
+    if not investigations:
+        print("\nNo investigations found.")
+        return
+
+    print("\nInvestigations:")
+    print("----------------")
+
+    for case_number, location, investigation_date, weather, evidence_type in investigations:
+        print(f"Case: {case_number}")
+        print(f"Location: {location}")
+        print(f"Date: {investigation_date}")
+        print(f"Weather: {weather}")
+        print(f"Evidence Type: {evidence_type}")
+        print("----------------")
+
+def search_by_evidence_type(database_folder):
+    evidence_type = choose_option(
+        "Search by evidence type:",
+        ["Visual", "Audio", "Physical", "Environmental", "None", "Other"]
+    )
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number, location, investigation_date, weather, evidence_type
+        FROM investigations
+        WHERE evidence_type = ?
+        ORDER BY generated_on DESC
+    """, (evidence_type,))
+
+    results = cursor.fetchall()
+    connection.close()
+
+    display_investigations(results)
+
+def search_by_location(database_folder):
+    location_search = ask_question("Enter location search term:")
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number, location, investigation_date, weather, evidence_type
+        FROM investigations
+        WHERE location LIKE ?
+        ORDER BY generated_on DESC
+    """, (f"%{location_search}%",))
+
+    results = cursor.fetchall()
+    connection.close()
+
+    display_investigations(results)
+
+def create_new_investigation():
     print("Investigation Log Generator")
     print("---------------------------")
 
@@ -189,6 +265,36 @@ Generated On: {investigation["generated_on"]}
     print(f"\nMarkdown log created: {log_path}")
     print(f"JSON data created: {data_path}")
     print("Investigation saved to SQLite database.")
+
+def main():
+    database_folder = Path("database")
+    database_folder.mkdir(exist_ok=True)
+
+    while True:
+        print("\nInvestigation Log Generator")
+        print("---------------------------")
+        print("1. Create new investigation")
+        print("2. View all investigations")
+        print("3. Search by evidence type")
+        print("4. Search by location")
+        print("5. Exit")
+
+        choice = input("Select option number: ")
+
+        if choice == "1":
+            create_new_investigation()
+        elif choice == "2":
+            investigations = fetch_all_investigations(database_folder)
+            display_investigations(investigations)
+        elif choice == "3":
+            search_by_evidence_type(database_folder)
+        elif choice == "4":
+            search_by_location(database_folder)
+        elif choice == "5":
+            print("Goodbye.")
+            break
+        else:
+            print("Please select a valid option.")
 
 if __name__ == "__main__":
     main()
