@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import json
+import sqlite3
 
 
 def ask_question(prompt):
@@ -35,6 +36,61 @@ def generate_case_id(data_folder):
 
     return f"{today}-{next_number:03d}"
 
+def save_to_database(investigation, database_folder):
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS investigations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_number TEXT UNIQUE,
+            location TEXT,
+            investigation_date TEXT,
+            investigators TEXT,
+            weather TEXT,
+            evidence_type TEXT,
+            reported_activity TEXT,
+            equipment_used TEXT,
+            observations TEXT,
+            initial_conclusion TEXT,
+            generated_on TEXT
+        )
+    """)
+
+    cursor.execute("""
+        INSERT INTO investigations (
+            case_number,
+            location,
+            investigation_date,
+            investigators,
+            weather,
+            evidence_type,
+            reported_activity,
+            equipment_used,
+            observations,
+            initial_conclusion,
+            generated_on
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        investigation["case_number"],
+        investigation["location"],
+        investigation["investigation_date"],
+        investigation["investigators"],
+        investigation["weather"],
+        investigation["evidence_type"],
+        investigation["reported_activity"],
+        investigation["equipment_used"],
+        investigation["observations"],
+        investigation["initial_conclusion"],
+        investigation["generated_on"],
+    ))
+
+    connection.commit()
+    connection.close()
+
 def main():
     print("Investigation Log Generator")
     print("---------------------------")
@@ -43,9 +99,11 @@ def main():
 
     logs_folder = Path("logs")
     data_folder = Path("data")
+    database_folder = Path("database")
 
     logs_folder.mkdir(exist_ok=True)
     data_folder.mkdir(exist_ok=True)
+    database_folder.mkdir(exist_ok=True)
 
     case_number = generate_case_id(data_folder)
     print(f"Generated Case ID: {case_number}")
@@ -126,9 +184,11 @@ Generated On: {investigation["generated_on"]}
         encoding="utf-8"
     )
 
+    save_to_database(investigation, database_folder)
+
     print(f"\nMarkdown log created: {log_path}")
     print(f"JSON data created: {data_path}")
-
+    print("Investigation saved to SQLite database.")
 
 if __name__ == "__main__":
     main()
