@@ -167,6 +167,66 @@ def search_by_location(database_folder):
 
     display_investigations(results)
 
+def view_investigation_details(database_folder):
+    case_number = ask_question("Enter Case ID:")
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            case_number,
+            location,
+            investigation_date,
+            investigators,
+            weather,
+            evidence_type,
+            reported_activity,
+            equipment_used,
+            observations,
+            initial_conclusion,
+            generated_on
+        FROM investigations
+        WHERE case_number = ?
+    """, (case_number,))
+
+    result = cursor.fetchone()
+    connection.close()
+
+    if result is None:
+        print("\nNo investigation found with that Case ID.")
+        return
+
+    (
+        case_number,
+        location,
+        investigation_date,
+        investigators,
+        weather,
+        evidence_type,
+        reported_activity,
+        equipment_used,
+        observations,
+        initial_conclusion,
+        generated_on,
+    ) = result
+
+    print("\nFull Investigation Details")
+    print("--------------------------")
+    print(f"Case Number: {case_number}")
+    print(f"Location: {location}")
+    print(f"Investigation Date: {investigation_date}")
+    print(f"Investigators: {investigators}")
+    print(f"Weather: {weather}")
+    print(f"Evidence Type: {evidence_type}")
+    print(f"Reported Activity: {reported_activity}")
+    print(f"Equipment Used: {equipment_used}")
+    print(f"Observations: {observations}")
+    print(f"Initial Conclusion: {initial_conclusion}")
+    print(f"Generated On: {generated_on}")
+
 def create_new_investigation():
     print("Investigation Log Generator")
     print("---------------------------")
@@ -277,7 +337,8 @@ def main():
         print("2. View all investigations")
         print("3. Search by evidence type")
         print("4. Search by location")
-        print("5. Exit")
+        print("5. View investigation details")
+        print("6. Exit")
 
         choice = input("Select option number: ")
 
@@ -291,6 +352,8 @@ def main():
         elif choice == "4":
             search_by_location(database_folder)
         elif choice == "5":
+            view_investigation_details(database_folder)
+        elif choice == "6":
             print("Goodbye.")
             break
         else:
