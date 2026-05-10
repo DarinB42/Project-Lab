@@ -227,6 +227,56 @@ def view_investigation_details(database_folder):
     print(f"Initial Conclusion: {initial_conclusion}")
     print(f"Generated On: {generated_on}")
 
+def edit_investigation(database_folder):
+    case_number = ask_question("Enter Case ID to edit:")
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number, observations, initial_conclusion
+        FROM investigations
+        WHERE case_number = ?
+    """, (case_number,))
+
+    result = cursor.fetchone()
+
+    if result is None:
+        connection.close()
+        print("\nNo investigation found with that Case ID.")
+        return
+
+    print("\nCurrent editable fields")
+    print("-----------------------")
+    print(f"1. Observations: {result[1]}")
+    print(f"2. Initial Conclusion: {result[2]}")
+
+    field_choice = input("Select field to edit: ").strip()
+
+    if field_choice == "1":
+        new_value = ask_question("Enter updated observations:")
+        field_name = "observations"
+    elif field_choice == "2":
+        new_value = ask_question("Enter updated initial conclusion:")
+        field_name = "initial_conclusion"
+    else:
+        connection.close()
+        print("Invalid selection.")
+        return
+
+    cursor.execute(f"""
+        UPDATE investigations
+        SET {field_name} = ?
+        WHERE case_number = ?
+    """, (new_value, case_number))
+
+    connection.commit()
+    connection.close()
+
+    print("\nInvestigation updated successfully.")
+
 def create_new_investigation():
     print("Investigation Log Generator")
     print("---------------------------")
@@ -338,7 +388,8 @@ def main():
         print("3. Search by evidence type")
         print("4. Search by location")
         print("5. View investigation details")
-        print("6. Exit")
+        print("6. Edit investigation")
+        print("7. Exit")
 
         choice = input("Select option number: ")
 
@@ -354,11 +405,13 @@ def main():
         elif choice == "5":
             view_investigation_details(database_folder)
         elif choice == "6":
+            edit_investigation(database_folder)
+        elif choice == "7":
             print("Goodbye.")
-            break
+            return
         else:
             print("Please select a valid option.")
-
+            
 if __name__ == "__main__":
     main()
     
