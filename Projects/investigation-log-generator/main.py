@@ -72,6 +72,7 @@ def save_to_database(investigation, database_folder):
             observations,
             initial_conclusion,
             generated_on
+            archived INTEGER DEFAULT
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
@@ -91,6 +92,24 @@ def save_to_database(investigation, database_folder):
     connection.commit()
     connection.close()
 
+def ensure_database_schema(database_folder):
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("PRAGMA table_info(investigations)")
+    columns = [column[1] for column in cursor.fetchall()]
+
+    if "archived" not in columns:
+        cursor.execute("""
+            ALTER TABLE investigations
+            ADD COLUMN archived INTEGER DEFAULT 0
+        """)
+
+    connection.commit()
+    connection.close()
+
 def fetch_all_investigations(database_folder):
     database_path = database_folder / "investigations.db"
 
@@ -100,6 +119,7 @@ def fetch_all_investigations(database_folder):
     cursor.execute("""
         SELECT case_number, location, investigation_date, weather, evidence_type
         FROM investigations
+        WHERE archived = 0
         ORDER BY generated_on DESC
     """)
 
@@ -139,6 +159,7 @@ def search_by_evidence_type(database_folder):
         SELECT case_number, location, investigation_date, weather, evidence_type
         FROM investigations
         WHERE evidence_type = ?
+        AND archived = 0
         ORDER BY generated_on DESC
     """, (evidence_type,))
 
@@ -159,6 +180,7 @@ def search_by_location(database_folder):
         SELECT case_number, location, investigation_date, weather, evidence_type
         FROM investigations
         WHERE location LIKE ?
+        AND archived = 0
         ORDER BY generated_on DESC
     """, (f"%{location_search}%",))
 
@@ -277,6 +299,48 @@ def edit_investigation(database_folder):
 
     print("\nInvestigation updated successfully.")
 
+def archive_investigation(database_folder):
+    case_number = ask_question("Enter Case ID to archive:")
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number
+        FROM investigations
+        WHERE case_number = ?
+        AND archived = 0
+    """, (case_number,))
+
+    result = cursor.fetchone()
+
+    if result is None:
+        connection.close()
+        print("\nNo active investigation found with that Case ID.")
+        return
+
+    confirm = ask_question(
+        "Are you sure you want to archive this investigation? Type YES to confirm:"
+    )
+
+    if confirm != "YES":
+        connection.close()
+        print("Archive cancelled.")
+        return
+
+    cursor.execute("""
+        UPDATE investigations
+        SET archived = 1
+        WHERE case_number = ?
+    """, (case_number,))
+
+    connection.commit()
+    connection.close()
+
+    print("\nInvestigation archived successfully.")
+
 def create_new_investigation():
     print("Investigation Log Generator")
     print("---------------------------")
@@ -379,6 +443,7 @@ Generated On: {investigation["generated_on"]}
 def main():
     database_folder = Path("database")
     database_folder.mkdir(exist_ok=True)
+    ensure_database_schema(database_folder)
 
     while True:
         print("\nInvestigation Log Generator")
@@ -389,7 +454,8 @@ def main():
         print("4. Search by location")
         print("5. View investigation details")
         print("6. Edit investigation")
-        print("7. Exit")
+        print("7. Archive investigation")
+        print("8. Exit")
 
         choice = input("Select option number: ")
 
@@ -407,6 +473,8 @@ def main():
         elif choice == "6":
             edit_investigation(database_folder)
         elif choice == "7":
+            archive_investigation(database_folder)
+        elif choice == "8":
             print("Goodbye.")
             return
         else:
