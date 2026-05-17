@@ -1,5 +1,7 @@
 import sqlite3
 
+from utils.helpers import choose_option
+
 def save_to_database(investigation, database_folder):
     database_path = database_folder / "investigations.db"
 
@@ -106,6 +108,30 @@ def fetch_all_investigations(database_folder):
         WHERE archived = 0
         ORDER BY generated_on DESC
     """)
+
+    results = cursor.fetchall()
+    connection.close()
+
+    return results
+
+def search_by_evidence_type(database_folder):
+    evidence_type = choose_option(
+        "Search by evidence type:",
+        ["Visual", "Audio", "Physical", "Environmental", "None", "Other"]
+    )
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number, location, investigation_date, weather, evidence_type
+        FROM investigations
+        WHERE evidence_type = ?
+        AND archived = 0
+        ORDER BY generated_on DESC
+    """, (evidence_type,))
 
     results = cursor.fetchall()
     connection.close()

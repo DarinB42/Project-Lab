@@ -3,6 +3,13 @@ from pathlib import Path
 import json
 import sqlite3
 
+from services.database_service import (
+    save_to_database,
+    ensure_database_schema,
+    fetch_all_investigations,
+    search_by_evidence_type
+)
+
 from utils.helpers import ask_question, choose_option, generate_case_id
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -29,29 +36,6 @@ def display_investigations(investigations):
         print(f"Evidence Type: {evidence_type}")
         print("----------------")
 
-def search_by_evidence_type(database_folder):
-    evidence_type = choose_option(
-        "Search by evidence type:",
-        ["Visual", "Audio", "Physical", "Environmental", "None", "Other"]
-    )
-
-    database_path = database_folder / "investigations.db"
-
-    connection = sqlite3.connect(database_path)
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT case_number, location, investigation_date, weather, evidence_type
-        FROM investigations
-        WHERE evidence_type = ?
-        AND archived = 0
-        ORDER BY generated_on DESC
-    """, (evidence_type,))
-
-    results = cursor.fetchall()
-    connection.close()
-
-    display_investigations(results)
 
 def search_by_location(database_folder):
     location_search = ask_question("Enter location search term:")
@@ -350,7 +334,8 @@ def main():
             investigations = fetch_all_investigations(database_folder)
             display_investigations(investigations)
         elif choice == "3":
-            search_by_evidence_type(database_folder)
+            results = search_by_evidence_type(database_folder)
+            display_investigations(results)
         elif choice == "4":
             search_by_location(database_folder)
         elif choice == "5":
