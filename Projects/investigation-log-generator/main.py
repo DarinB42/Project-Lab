@@ -7,7 +7,8 @@ from services.database_service import (
     save_to_database,
     ensure_database_schema,
     fetch_all_investigations,
-    search_by_evidence_type
+    search_by_evidence_type,
+    search_by_location
 )
 
 from utils.helpers import ask_question, choose_option, generate_case_id
@@ -37,26 +38,6 @@ def display_investigations(investigations):
         print("----------------")
 
 
-def search_by_location(database_folder):
-    location_search = ask_question("Enter location search term:")
-
-    database_path = database_folder / "investigations.db"
-
-    connection = sqlite3.connect(database_path)
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT case_number, location, investigation_date, weather, evidence_type
-        FROM investigations
-        WHERE location LIKE ?
-        AND archived = 0
-        ORDER BY generated_on DESC
-    """, (f"%{location_search}%",))
-
-    results = cursor.fetchall()
-    connection.close()
-
-    display_investigations(results)
 
 def view_investigation_details(database_folder):
     case_number = ask_question("Enter Case ID:")
@@ -337,7 +318,8 @@ def main():
             results = search_by_evidence_type(database_folder)
             display_investigations(results)
         elif choice == "4":
-            search_by_location(database_folder)
+            results = search_by_location(database_folder)
+            display_investigations(results)
         elif choice == "5":
             view_investigation_details(database_folder)
         elif choice == "6":
