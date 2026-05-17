@@ -10,7 +10,8 @@ from services.database_service import (
     search_by_evidence_type,
     search_by_location,
     view_investigation_details,
-    edit_investigation
+    edit_investigation,
+    archive_investigation
     )
 
 from utils.helpers import ask_question, choose_option, generate_case_id
@@ -39,53 +40,6 @@ def display_investigations(investigations):
         print(f"Evidence Type: {evidence_type}")
         print("----------------")
 
-
-
-
-
-
-
-def archive_investigation(database_folder):
-    case_number = ask_question("Enter Case ID to archive:")
-
-    database_path = database_folder / "investigations.db"
-
-    connection = sqlite3.connect(database_path)
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT case_number
-        FROM investigations
-        WHERE case_number = ?
-        AND archived = 0
-    """, (case_number,))
-
-    result = cursor.fetchone()
-
-    if result is None:
-        connection.close()
-        print("\nNo active investigation found with that Case ID.")
-        return
-
-    confirm = ask_question(
-        "Are you sure you want to archive this investigation? Type YES to confirm:"
-    )
-
-    if confirm != "YES":
-        connection.close()
-        print("Archive cancelled.")
-        return
-
-    cursor.execute("""
-        UPDATE investigations
-        SET archived = 1
-        WHERE case_number = ?
-    """, (case_number,))
-
-    connection.commit()
-    connection.close()
-
-    print("\nInvestigation archived successfully.")
 
 def create_new_investigation():
     print("Investigation Log Generator")
@@ -252,7 +206,8 @@ def main():
             message = edit_investigation(database_folder)
             print(f"\n{message}")    
         elif choice == "7":
-            archive_investigation(database_folder)
+            message = archive_investigation(database_folder)
+            print(f"\n{message}")
         elif choice == "8":
             print("Goodbye.")
             return

@@ -253,3 +253,43 @@ def edit_investigation(database_folder):
     connection.close()
 
     return "Investigation updated successfully."
+
+def archive_investigation(database_folder):
+    case_number = ask_question("Enter Case ID to archive:")
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number
+        FROM investigations
+        WHERE case_number = ?
+        AND archived = 0
+    """, (case_number,))
+
+    result = cursor.fetchone()
+
+    if result is None:
+        connection.close()
+        return "No active investigation found with that Case ID. Check that the Case ID is exact and that the case is not already archived."  
+
+    confirm = ask_question(
+        "Are you sure you want to archive this investigation? Type YES to confirm:"
+    )
+
+    if confirm != "YES":
+        connection.close()
+        return "Archive cancelled."    
+
+    cursor.execute("""
+        UPDATE investigations
+        SET archived = 1
+        WHERE case_number = ?
+    """, (case_number,))
+
+    connection.commit()
+    connection.close()
+
+    return "Investigation archived successfully."
