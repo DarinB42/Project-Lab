@@ -8,8 +8,9 @@ from services.database_service import (
     ensure_database_schema,
     fetch_all_investigations,
     search_by_evidence_type,
-    search_by_location
-)
+    search_by_location,
+    view_investigation_details
+    )
 
 from utils.helpers import ask_question, choose_option, generate_case_id
 
@@ -39,65 +40,7 @@ def display_investigations(investigations):
 
 
 
-def view_investigation_details(database_folder):
-    case_number = ask_question("Enter Case ID:")
 
-    database_path = database_folder / "investigations.db"
-
-    connection = sqlite3.connect(database_path)
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT
-            case_number,
-            location,
-            investigation_date,
-            investigators,
-            weather,
-            evidence_type,
-            reported_activity,
-            equipment_used,
-            observations,
-            initial_conclusion,
-            generated_on
-        FROM investigations
-        WHERE case_number = ?
-    """, (case_number,))
-
-    result = cursor.fetchone()
-    connection.close()
-
-    if result is None:
-        print("\nNo investigation found with that Case ID.")
-        return
-
-    (
-        case_number,
-        location,
-        investigation_date,
-        investigators,
-        weather,
-        evidence_type,
-        reported_activity,
-        equipment_used,
-        observations,
-        initial_conclusion,
-        generated_on,
-    ) = result
-
-    print("\nFull Investigation Details")
-    print("--------------------------")
-    print(f"Case Number: {case_number}")
-    print(f"Location: {location}")
-    print(f"Investigation Date: {investigation_date}")
-    print(f"Investigators: {investigators}")
-    print(f"Weather: {weather}")
-    print(f"Evidence Type: {evidence_type}")
-    print(f"Reported Activity: {reported_activity}")
-    print(f"Equipment Used: {equipment_used}")
-    print(f"Observations: {observations}")
-    print(f"Initial Conclusion: {initial_conclusion}")
-    print(f"Generated On: {generated_on}")
 
 def edit_investigation(database_folder):
     case_number = ask_question("Enter Case ID to edit:")
@@ -321,7 +264,39 @@ def main():
             results = search_by_location(database_folder)
             display_investigations(results)
         elif choice == "5":
-            view_investigation_details(database_folder)
+            result = view_investigation_details(database_folder)
+
+            if result is None:
+                print("\nNo investigation found with that Case ID.")
+
+            else:
+                (
+                    case_number,
+                    location,
+                    investigation_date,
+                    investigators,
+                    weather,
+                    evidence_type,
+                    reported_activity,
+                    equipment_used,
+                    observations,
+                    initial_conclusion,
+                    generated_on,
+                ) = result
+
+                print("\nFull Investigation Details")
+                print("--------------------------")
+                print(f"Case Number: {case_number}")
+                print(f"Location: {location}")
+                print(f"Investigation Date: {investigation_date}")
+                print(f"Investigators: {investigators}")
+                print(f"Weather: {weather}")
+                print(f"Evidence Type: {evidence_type}")
+                print(f"Reported Activity: {reported_activity}")
+                print(f"Equipment Used: {equipment_used}")
+                print(f"Observations: {observations}")
+                print(f"Initial Conclusion: {initial_conclusion}")
+                print(f"Generated On: {generated_on}")
         elif choice == "6":
             edit_investigation(database_folder)
         elif choice == "7":
