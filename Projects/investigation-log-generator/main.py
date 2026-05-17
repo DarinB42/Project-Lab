@@ -15,6 +15,7 @@ from services.database_service import (
     )
 
 from utils.helpers import ask_question, choose_option, generate_case_id
+from utils.display import display_investigations, display_investigation_details
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -172,36 +173,7 @@ def main():
             display_investigations(results)
         elif choice == "5":
             result = view_investigation_details(database_folder)
-            if result is None:
-                print("\nNo investigation found with that Case ID.")
-            else:
-                (
-                    case_number,
-                    location,
-                    investigation_date,
-                    investigators,
-                    weather,
-                    evidence_type,
-                    reported_activity,
-                    equipment_used,
-                    observations,
-                    initial_conclusion,
-                    generated_on,
-                ) = result
-
-                print("\nFull Investigation Details")
-                print("--------------------------")
-                print(f"Case Number: {case_number}")
-                print(f"Location: {location}")
-                print(f"Investigation Date: {investigation_date}")
-                print(f"Investigators: {investigators}")
-                print(f"Weather: {weather}")
-                print(f"Evidence Type: {evidence_type}")
-                print(f"Reported Activity: {reported_activity}")
-                print(f"Equipment Used: {equipment_used}")
-                print(f"Observations: {observations}")
-                print(f"Initial Conclusion: {initial_conclusion}")
-                print(f"Generated On: {generated_on}")
+            display_investigation_details(result)
         elif choice == "6":
             message = edit_investigation(database_folder)
             print(f"\n{message}")    
