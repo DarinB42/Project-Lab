@@ -205,3 +205,51 @@ def view_investigation_details(database_folder):
     ) = result
 
     return result
+
+def edit_investigation(database_folder):
+    case_number = ask_question("Enter Case ID to edit:")
+
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT case_number, observations, initial_conclusion
+        FROM investigations
+        WHERE case_number = ?
+    """, (case_number,))
+
+    result = cursor.fetchone()
+
+    if result is None:
+        connection.close()
+        return "No investigation found with that Case ID."    
+
+    print("\nCurrent editable fields")
+    print("-----------------------")
+    print(f"1. Observations: {result[1]}")
+    print(f"2. Initial Conclusion: {result[2]}")
+
+    field_choice = input("Select field to edit: ").strip()
+
+    if field_choice == "1":
+        new_value = ask_question("Enter updated observations:")
+        field_name = "observations"
+    elif field_choice == "2":
+        new_value = ask_question("Enter updated initial conclusion:")
+        field_name = "initial_conclusion"
+    else:
+        connection.close()
+        return "Invalid selection."
+
+    cursor.execute(f"""
+        UPDATE investigations
+        SET {field_name} = ?
+        WHERE case_number = ?
+    """, (new_value, case_number))
+
+    connection.commit()
+    connection.close()
+
+    return "Investigation updated successfully."

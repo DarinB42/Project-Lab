@@ -9,7 +9,8 @@ from services.database_service import (
     fetch_all_investigations,
     search_by_evidence_type,
     search_by_location,
-    view_investigation_details
+    view_investigation_details,
+    edit_investigation
     )
 
 from utils.helpers import ask_question, choose_option, generate_case_id
@@ -42,55 +43,7 @@ def display_investigations(investigations):
 
 
 
-def edit_investigation(database_folder):
-    case_number = ask_question("Enter Case ID to edit:")
 
-    database_path = database_folder / "investigations.db"
-
-    connection = sqlite3.connect(database_path)
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT case_number, observations, initial_conclusion
-        FROM investigations
-        WHERE case_number = ?
-    """, (case_number,))
-
-    result = cursor.fetchone()
-
-    if result is None:
-        connection.close()
-        print("\nNo investigation found with that Case ID.")
-        return
-
-    print("\nCurrent editable fields")
-    print("-----------------------")
-    print(f"1. Observations: {result[1]}")
-    print(f"2. Initial Conclusion: {result[2]}")
-
-    field_choice = input("Select field to edit: ").strip()
-
-    if field_choice == "1":
-        new_value = ask_question("Enter updated observations:")
-        field_name = "observations"
-    elif field_choice == "2":
-        new_value = ask_question("Enter updated initial conclusion:")
-        field_name = "initial_conclusion"
-    else:
-        connection.close()
-        print("Invalid selection.")
-        return
-
-    cursor.execute(f"""
-        UPDATE investigations
-        SET {field_name} = ?
-        WHERE case_number = ?
-    """, (new_value, case_number))
-
-    connection.commit()
-    connection.close()
-
-    print("\nInvestigation updated successfully.")
 
 def archive_investigation(database_folder):
     case_number = ask_question("Enter Case ID to archive:")
@@ -265,10 +218,8 @@ def main():
             display_investigations(results)
         elif choice == "5":
             result = view_investigation_details(database_folder)
-
             if result is None:
                 print("\nNo investigation found with that Case ID.")
-
             else:
                 (
                     case_number,
@@ -298,7 +249,8 @@ def main():
                 print(f"Initial Conclusion: {initial_conclusion}")
                 print(f"Generated On: {generated_on}")
         elif choice == "6":
-            edit_investigation(database_folder)
+            message = edit_investigation(database_folder)
+            print(f"\n{message}")    
         elif choice == "7":
             archive_investigation(database_folder)
         elif choice == "8":
