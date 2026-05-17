@@ -2,39 +2,7 @@ from datetime import datetime
 from pathlib import Path
 import json
 import sqlite3
-
-
-def ask_question(prompt):
-    return input(prompt + " ")
-
-
-def choose_option(prompt, options):
-    print(f"\n{prompt}")
-
-    for i, option in enumerate(options, 1):
-        print(f"{i}. {option}")
-
-    while True:
-        choice = input("Select option number: ")
-
-        if not choice.isdigit():
-            print("Please enter a number.")
-            continue
-
-        choice = int(choice)
-
-        if 1 <= choice <= len(options):
-            return options[choice - 1]
-
-        print(f"Please enter a number between 1 and {len(options)}.")
-
-def generate_case_id(data_folder):
-    today = datetime.now().strftime("%Y-%m-%d")
-    existing_files = list(data_folder.glob(f"{today}-*_data.json"))
-
-    next_number = len(existing_files) + 1
-
-    return f"{today}-{next_number:03d}"
+from utils.helpers import ask_question, choose_option, generate_case_id
 
 def save_to_database(investigation, database_folder):
     database_path = database_folder / "investigations.db"
@@ -97,6 +65,24 @@ def ensure_database_schema(database_folder):
 
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS investigations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_number TEXT UNIQUE,
+            location TEXT,
+            investigation_date TEXT,
+            investigators TEXT,
+            weather TEXT,
+            evidence_type TEXT,
+            reported_activity TEXT,
+            equipment_used TEXT,
+            observations TEXT,
+            initial_conclusion TEXT,
+            generated_on TEXT,
+            archived INTEGER DEFAULT 0
+        )
+    """)
 
     cursor.execute("PRAGMA table_info(investigations)")
     columns = [column[1] for column in cursor.fetchall()]
