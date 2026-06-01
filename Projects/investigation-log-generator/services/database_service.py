@@ -206,6 +206,35 @@ def view_investigation_details(database_folder):
 
     return result
 
+def fetch_investigation_by_case(database_folder, case_number):
+    database_path = database_folder / "investigations.db"
+
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT
+            case_number,
+            location,
+            investigation_date,
+            investigators,
+            weather,
+            evidence_type,
+            reported_activity,
+            equipment_used,
+            observations,
+            initial_conclusion,
+            generated_on
+        FROM investigations
+        WHERE case_number = ?
+    """, (case_number,))
+
+    result = cursor.fetchone()
+
+    connection.close()
+
+    return result
+
 def edit_investigation(database_folder):
     case_number = ask_question("Enter Case ID to edit:")
 
