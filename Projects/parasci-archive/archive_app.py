@@ -331,12 +331,229 @@ def create_case():
     except sqlite3.IntegrityError as error:
         print(f"Case could not be saved: {error}")
 
+def create_activity():
+    print("\n=== Create Research Activity ===")
+
+    while True:
+        activity_number = input("Activity number (or Q to cancel): ").strip()
+
+        if activity_number.lower() == "q":
+            print("Activity creation cancelled.")
+            return
+
+        if not activity_number:
+            print("Activity number is required.")
+            continue
+
+        with get_connection() as connection:
+            existing_activity = connection.execute(
+                """
+                SELECT activity_name
+                FROM research_activity
+                WHERE activity_number = ?
+                """,
+                (activity_number,),
+            ).fetchone()
+
+        if existing_activity:
+            print(
+                f"Activity {activity_number} already exists: "
+                f"{existing_activity['activity_name']}"
+            )
+            print("Enter a different Activity number or Q to cancel.")
+            continue
+
+        break
+
+    print(f"\nActivity number {activity_number} is available.")
+
+    while True:
+        activity_name = input("Activity name (or Q to cancel): ").strip()
+
+        if activity_name.lower() == "q":
+            print("Activity creation cancelled.")
+            return
+
+        if activity_name:
+            break
+
+        print("Activity name is required.")
+
+    activity_types = {
+        "1": ("INV", "Investigation"),
+        "2": ("EXP", "Experiment"),
+        "3": ("HIS", "Historical Research"),
+        "4": ("CMP", "Comparative Research"),
+        "5": ("COM", "Computational Research"),
+    }
+
+    print("\nChoose an Activity type:")
+    for number, (code, name) in activity_types.items():
+        print(f"{number}. {name} ({code})")
+
+    while True:
+        choice = input("Activity type number (or Q to cancel): ").strip()
+
+        if choice.lower() == "q":
+            print("Activity creation cancelled.")
+            return
+
+        if choice in activity_types:
+            activity_type = activity_types[choice][0]
+            break
+
+        print("Invalid selection. Choose a number from the list or Q to cancel.")
+
+    activity_statuses = [
+        "Proposed",
+        "Planning",
+        "Ready",
+        "In Progress",
+        "On Hold",
+        "Post-Research Review",
+        "Completed",
+        "Terminated",
+    ]
+
+    print("\nChoose an Activity status:")
+    for number, status in enumerate(activity_statuses, start=1):
+        print(f"{number}. {status}")
+
+    while True:
+        choice = input("Activity status number (or Q to cancel): ").strip()
+
+        if choice.lower() == "q":
+            print("Activity creation cancelled.")
+            return
+
+        if choice.isdigit() and 1 <= int(choice) <= len(activity_statuses):
+            activity_status = activity_statuses[int(choice) - 1]
+            break
+
+        print("Invalid selection. Choose a number from the list or Q to cancel.")
+
+    with get_connection() as connection:
+        cases = connection.execute(
+            """
+            SELECT case_id, case_number, case_name
+            FROM research_case
+            ORDER BY case_number
+            """
+        ).fetchall()
+
+    if not cases:
+        print("No Research Cases are available. Create a Case first.")
+        return
+
+    print("\nChoose the Case to link to this Activity:")
+    for number, case in enumerate(cases, start=1):
+        print(f"{number}. {case['case_number']}: {case['case_name']}")
+
+    while True:
+        choice = input("Case number from the list (or Q to cancel): ").strip()
+
+        if choice.lower() == "q":
+            print("Activity creation cancelled.")
+            return
+
+        if choice.isdigit() and 1 <= int(choice) <= len(cases):
+            selected_case = cases[int(choice) - 1]
+            case_id = selected_case["case_id"]
+            break
+
+        print("Invalid selection. Choose a number from the list or Q to cancel.")
+
+        print("\nOptional Activity details — press Enter to skip.")
+
+    purpose = input("Purpose: ").strip()
+
+    while True:
+        planned_start_date = input(
+            "Planned start date (YYYY-MM-DD, or Enter to skip): "
+        ).strip()
+
+        if not planned_start_date:
+            break
+
+        try:
+            from datetime import date
+
+            if (
+                len(planned_start_date) != 10
+                or date.fromisoformat(planned_start_date).isoformat()
+                != planned_start_date
+            ):
+                raise ValueError
+
+            break
+
+        except ValueError:
+            print("Enter a valid date in YYYY-MM-DD format, or press Enter to skip.")
+
+    print(f"\nActivity: {activity_number} — {activity_name}")
+    print(f"Type: {activity_type}")
+    print(f"Status: {activity_status}")
+    print(f"Purpose: {purpose or 'Not provided'}")
+    print(f"Planned start: {planned_start_date or 'Not scheduled'}")
+    print(
+        f"Linked Case: {selected_case['case_number']} — "
+        f"{selected_case['case_name']}"
+    )
+    confirmation = input("\nSave this Activity? (Y/N): ").strip().lower()
+
+    if confirmation != "y":
+        print("Activity creation cancelled. No Activity was saved.")
+        return
+
+    try:
+        with get_connection() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO research_activity (
+                    activity_number,
+                    activity_name,
+                    activity_type,
+                    activity_status,
+                    purpose,
+                    planned_start_date
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    activity_number,
+                    activity_name,
+                    activity_type,
+                    activity_status,
+                    purpose or None,
+                    planned_start_date or None,
+                ),
+            )
+
+            activity_id = cursor.lastrowid
+
+            connection.execute(
+                """
+                INSERT INTO case_activity (case_id, activity_id)
+                VALUES (?, ?)
+                """,
+                (case_id, activity_id),
+            )
+
+        print(
+            f"Activity {activity_number} saved and linked to "
+            f"Case {selected_case['case_number']}."
+        )
+
+    except sqlite3.IntegrityError as error:
+        print(f"Activity could not be saved: {error}")
+
 def main():
     while True:
         print("\n=== ParaSci Archive ===")
         print("1. View Research Cases")
         print("2. Create Research Case")
-        print("3. Exit")
+        print("3. Create Research Activity")
+        print("4. Exit")
 
         choice = input("\nChoose an option: ").strip()
 
@@ -345,10 +562,12 @@ def main():
         elif choice == "2":
             create_case()
         elif choice == "3":
+            create_activity()
+        elif choice == "4":
             print("Exiting ParaSci Archive.")
             break
         else:
-            print("Invalid option. Please choose 1, 2, or 3.")
+            print("Invalid option. Please choose 1, 2, 3, or 4.")
 
 
 if __name__ == "__main__":
