@@ -258,4 +258,43 @@ CREATE TABLE IF NOT EXISTS observation (
         REFERENCES person(person_id)
 );
 
+-- Materials collected or created during research
+CREATE TABLE IF NOT EXISTS research_material (
+    material_id INTEGER PRIMARY KEY,
+    activity_id INTEGER NOT NULL,
+    material_number TEXT NOT NULL UNIQUE,
+    material_type TEXT NOT NULL
+        CHECK (
+            material_type IN (
+                'Audio',
+                'Video',
+                'Photograph',
+                'Document',
+                'Instrument Data',
+                'Other'
+            )
+        ),
+    material_name TEXT NOT NULL,
+    file_path TEXT,
+    description TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (activity_id)
+        REFERENCES research_activity(activity_id)
+);
+
+-- Connect Research Materials to the Events they document
+CREATE TABLE IF NOT EXISTS event_material (
+    event_id INTEGER NOT NULL,
+    material_id INTEGER NOT NULL,
+
+    PRIMARY KEY (event_id, material_id),
+
+    FOREIGN KEY (event_id)
+        REFERENCES research_event(event_id),
+
+    FOREIGN KEY (material_id)
+        REFERENCES research_material(material_id)
+);
+
 
