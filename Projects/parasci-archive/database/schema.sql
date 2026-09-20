@@ -227,4 +227,35 @@ CREATE TABLE IF NOT EXISTS activity_person (
         REFERENCES person(person_id)
 );
 
+-- Time-bounded events within a Research Activity
+CREATE TABLE IF NOT EXISTS research_event (
+    event_id INTEGER PRIMARY KEY,
+    activity_id INTEGER NOT NULL,
+    event_type TEXT NOT NULL,
+    event_start TEXT NOT NULL,
+    event_end TEXT,
+    event_description TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (activity_id)
+        REFERENCES research_activity(activity_id)
+);
+
+-- Observations recorded during Research Events
+CREATE TABLE IF NOT EXISTS observation (
+    observation_id INTEGER PRIMARY KEY,
+    event_id INTEGER NOT NULL,
+    recorded_by_person_id INTEGER,
+    observed_at TEXT NOT NULL,
+    observation_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (event_id)
+        REFERENCES research_event(event_id),
+
+    FOREIGN KEY (recorded_by_person_id)
+        REFERENCES person(person_id)
+);
+
 
