@@ -208,7 +208,36 @@ def create_case():
     print("\n=== Create Research Case ===")
     print("Create a Case only after its research question has been reviewed and accepted.")
 
-    case_number = input("Case number: ").strip()
+    while True:
+        case_number = input("Case number (or Q to cancel): ").strip()
+
+        if case_number.lower() == "q":
+            print("Case creation cancelled.")
+            return
+
+        if not case_number:
+            print("Case number is required.")
+            continue
+
+        with get_connection() as connection:
+            existing_case = connection.execute(
+                """
+                SELECT case_name
+                FROM research_case
+                WHERE case_number = ?
+                """,
+                (case_number,),
+            ).fetchone()
+
+        if existing_case:
+            print(
+                f"Case {case_number} already exists: "
+                f"{existing_case['case_name']}"
+            )
+            print("Enter a different Case number or Q to cancel.")
+            continue
+
+        break
     case_name = input("Case name: ").strip()
     opened_date = input("Date opened (YYYY-MM-DD): ").strip()
     if not case_number or not case_name:
