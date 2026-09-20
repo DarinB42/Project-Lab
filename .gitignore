@@ -1,0 +1,9 @@
+# ParaSci Archive local database
+projects/parasci-archive/database/*.db
+projects/parasci-archive/database/*.db-journal
+projects/parasci-archive/database/*.db-wal
+projects/parasci-archive/database/*.db-shm
+
+# Python-generated files
+__pycache__/
+*.pyc
