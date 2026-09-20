@@ -1,4 +1,5 @@
 from database.database_service import get_connection
+import sqlite3
 
 def view_activity_details(activity_number):
     with get_connection() as connection:
@@ -170,22 +171,155 @@ def view_cases():
     if case_number:
         view_case_details(case_number)
 
+def choose_option(connection, table_name, id_column, name_column, label):
+    rows = connection.execute(
+        f"""
+        SELECT {id_column}, {name_column}
+        FROM {table_name}
+        WHERE is_active = 1
+        ORDER BY {name_column}
+        """
+    ).fetchall()
+
+    if not rows:
+        print(f"No active {label.lower()} options are available.")
+        return None
+
+    print(f"\nChoose a {label.lower()}:")
+
+    for number, row in enumerate(rows, start=1):
+        print(f"{number}. {row[name_column]}")
+
+    while True:
+        choice = input(f"{label} number (or Q to cancel): ").strip()
+
+        if choice.lower() == "q":
+            return None
+
+        if choice.isdigit():
+            selection = int(choice)
+
+            if 1 <= selection <= len(rows):
+                return rows[selection - 1][id_column]
+
+        print("Invalid selection. Choose a number from the list or Q to cancel.")
+
+def create_case():
+    print("\n=== Create Research Case ===")
+    print("Create a Case only after its research question has been reviewed and accepted.")
+
+    case_number = input("Case number: ").strip()
+    case_name = input("Case name: ").strip()
+    opened_date = input("Date opened (YYYY-MM-DD): ").strip()
+    if not case_number or not case_name:
+        print("Case number and Case name are required. No Case was created.")
+        return
+
+    try:
+        from datetime import date
+        date.fromisoformat(opened_date)
+
+        if len(opened_date) != 10 or opened_date[4] != "-" or opened_date[7] != "-":
+            raise ValueError
+
+    except ValueError:
+        print("Enter a valid opened date in YYYY-MM-DD format. No Case was created.")
+        return
+
+    with get_connection() as connection:
+        primary_domain_id = choose_option(
+            connection,
+            "domain",
+            "domain_id",
+            "domain_name",
+            "Domain",
+        )
+
+        if primary_domain_id is None:
+            print("Case creation cancelled.")
+            return
+
+        case_status_id = choose_option(
+            connection,
+            "case_status",
+            "case_status_id",
+            "status_name",
+            "Case status",
+        )
+
+        if case_status_id is None:
+            print("Case creation cancelled.")
+            return
+
+    print("\nOptional details — press Enter to leave any field blank.")
+    summary = input("Research question / summary: ").strip()
+    scope = input("Scope: ").strip()
+    exclusions = input("Exclusions: ").strip()
+
+    print("\nCase details entered:")
+    print(f"  Number: {case_number}")
+    print(f"  Name: {case_name}")
+    print(f"  Opened: {opened_date}")
+    print(f"  Summary: {summary or 'Not provided'}")
+    print(f"  Scope: {scope or 'Not provided'}")
+    print(f"  Exclusions: {exclusions or 'Not provided'}")
+    confirmation = input("\nSave this Case? (Y/N): ").strip().lower()
+
+    if confirmation != "y":
+        print("Case creation cancelled. No Case was saved.")
+        return
+
+    try:
+        with get_connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO research_case (
+                    case_number,
+                    case_name,
+                    primary_domain_id,
+                    opened_date,
+                    case_status_id,
+                    summary,
+                    scope,
+                    exclusions
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    case_number,
+                    case_name,
+                    primary_domain_id,
+                    opened_date,
+                    case_status_id,
+                    summary or None,
+                    scope or None,
+                    exclusions or None,
+                ),
+            )
+
+        print(f"Case {case_number} saved successfully.")
+
+    except sqlite3.IntegrityError as error:
+        print(f"Case could not be saved: {error}")
 
 def main():
     while True:
         print("\n=== ParaSci Archive ===")
         print("1. View Research Cases")
-        print("2. Exit")
+        print("2. Create Research Case")
+        print("3. Exit")
 
         choice = input("\nChoose an option: ").strip()
 
         if choice == "1":
             view_cases()
         elif choice == "2":
+            create_case()
+        elif choice == "3":
             print("Exiting ParaSci Archive.")
             break
         else:
-            print("Invalid option. Please choose 1 or 2.")
+            print("Invalid option. Please choose 1, 2, or 3.")
 
 
 if __name__ == "__main__":
